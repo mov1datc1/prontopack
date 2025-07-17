@@ -1,1 +1,0 @@
-<!-- Exportación del inventario filtrado a Excel -->
