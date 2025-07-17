@@ -1,0 +1,1 @@
+<!-- Dashboard completo con cards, métricas, y gráficos -->

@@ -1,0 +1,1 @@
+<!-- Inventario con filtros, búsqueda, importación/exportación -->

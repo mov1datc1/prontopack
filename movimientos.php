@@ -1,0 +1,1 @@
+<!-- Formulario de movimiento (entrada/salida/transferencia) -->
