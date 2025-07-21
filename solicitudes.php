@@ -2,20 +2,22 @@
 include 'includes/conexion.php';
 include 'includes/sidebar.php';
 
-// Alerta de error si falla la conexión
-if (!isset($pdo)) {
-    echo "<div class='error-alert'>❌ Error al conectar con la base de datos.</div>";
-    return;
-}
+// Agregar o editar solicitud
+if (isset($_POST['guardar'])) {
+    $nombre = mysqli_real_escape_string($conn, $_POST['nombre']);
+    $descripcion = mysqli_real_escape_string($conn, $_POST['descripcion']);
+    $estatus = mysqli_real_escape_string($conn, $_POST['estatus']);
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
-// Agregar solicitud
-if (isset($_POST['agregar'])) {
-    $nombre = $_POST['nombre'];
-    $descripcion = $_POST['descripcion'];
-    $estatus = 'pendiente';
+    if ($id > 0) {
+        // Actualizar solicitud
+        $sql = "UPDATE solicitudes SET nombre='$nombre', descripcion='$descripcion', estatus='$estatus' WHERE id=$id";
+    } else {
+        // Insertar nueva solicitud
+        $sql = "INSERT INTO solicitudes (nombre, descripcion, estatus) VALUES ('$nombre', '$descripcion', '$estatus')";
+    }
 
-    $stmt = $pdo->prepare("INSERT INTO solicitudes (nombre, descripcion, estatus) VALUES (?, ?, ?)");
-    $stmt->execute([$nombre, $descripcion, $estatus]);
+    mysqli_query($conn, $sql);
     header("Location: solicitudes.php");
     exit();
 }
@@ -23,38 +25,56 @@ if (isset($_POST['agregar'])) {
 // Eliminar solicitud
 if (isset($_GET['eliminar'])) {
     $id = (int)$_GET['eliminar'];
-    $pdo->prepare("DELETE FROM solicitudes WHERE id = ?")->execute([$id]);
+    mysqli_query($conn, "DELETE FROM solicitudes WHERE id = $id");
     header("Location: solicitudes.php");
     exit();
 }
 
-// Obtener solicitudes
-$stmt = $pdo->query("SELECT * FROM solicitudes ORDER BY id DESC");
-$solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Obtener datos para edición
+$editando = false;
+$solicitud_edit = ['id' => '', 'nombre' => '', 'descripcion' => '', 'estatus' => 'pendiente'];
+if (isset($_GET['editar'])) {
+    $editando = true;
+    $id = (int)$_GET['editar'];
+    $res = mysqli_query($conn, "SELECT * FROM solicitudes WHERE id = $id");
+    $solicitud_edit = mysqli_fetch_assoc($res);
+}
+
+// Obtener todas las solicitudes
+$solicitudes = mysqli_query($conn, "SELECT * FROM solicitudes ORDER BY id DESC");
 ?>
 
 <div class="content">
-    <h1 class="titulo">📋 Solicitudes</h1>
+    <h1 class="titulo">Solicitudes</h1>
 
-    <!-- Formulario Nueva Solicitud -->
+    <!-- Formulario -->
     <div class="form-container">
-        <h2>➕ Agregar Nueva Solicitud</h2>
+        <h2><?php echo $editando ? 'Editar Solicitud' : 'Agregar Nueva Solicitud'; ?></h2>
         <form method="POST" class="formulario">
+            <input type="hidden" name="id" value="<?php echo $solicitud_edit['id']; ?>">
             <div class="form-group">
-                <label for="nombre">👤 Nombre del Solicitante</label>
-                <input type="text" name="nombre" id="nombre" required placeholder="Ej. Ana Pérez">
+                <label for="nombre">Nombre del Solicitante</label>
+                <input type="text" name="nombre" id="nombre" required value="<?php echo $solicitud_edit['nombre']; ?>">
             </div>
             <div class="form-group">
-                <label for="descripcion">📝 Descripción</label>
-                <textarea name="descripcion" id="descripcion" rows="3" required placeholder="Describe lo solicitado..."></textarea>
+                <label for="descripcion">Descripción</label>
+                <textarea name="descripcion" id="descripcion" rows="3" required><?php echo $solicitud_edit['descripcion']; ?></textarea>
             </div>
-            <button type="submit" name="agregar" class="btn btn-primary">✅ Agregar</button>
+            <div class="form-group">
+                <label for="estatus">Estatus</label>
+                <select name="estatus" id="estatus" required>
+                    <option value="pendiente" <?php if ($solicitud_edit['estatus'] == 'pendiente') echo 'selected'; ?>>Pendiente</option>
+                    <option value="proceso" <?php if ($solicitud_edit['estatus'] == 'proceso') echo 'selected'; ?>>En proceso</option>
+                    <option value="realizado" <?php if ($solicitud_edit['estatus'] == 'realizado') echo 'selected'; ?>>Realizado</option>
+                </select>
+            </div>
+            <button type="submit" name="guardar" class="btn btn-primary"><?php echo $editando ? 'Actualizar' : 'Agregar'; ?></button>
         </form>
     </div>
 
-    <!-- Tabla de Solicitudes -->
+    <!-- Tabla -->
     <div class="table-container">
-        <h2>📄 Solicitudes Registradas</h2>
+        <h2>Solicitudes Registradas</h2>
         <table class="tabla">
             <thead>
                 <tr>
@@ -66,22 +86,22 @@ $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($solicitudes as $row): ?>
+                <?php while ($row = mysqli_fetch_assoc($solicitudes)): ?>
                     <tr>
-                        <td><?= $row['id']; ?></td>
-                        <td><?= htmlspecialchars($row['nombre']); ?></td>
-                        <td><?= htmlspecialchars($row['descripcion']); ?></td>
+                        <td><?php echo $row['id']; ?></td>
+                        <td><?php echo htmlspecialchars($row['nombre']); ?></td>
+                        <td><?php echo htmlspecialchars($row['descripcion']); ?></td>
                         <td>
-                            <span class="badge <?= $row['estatus']; ?>">
-                                <?= ucfirst($row['estatus']); ?>
+                            <span class="badge <?php echo $row['estatus']; ?>">
+                                <?php echo ucfirst($row['estatus']); ?>
                             </span>
                         </td>
                         <td>
-                            <a href="editar_solicitud.php?id=<?= $row['id']; ?>" class="btn-action edit">✏️</a>
-                            <a href="solicitudes.php?eliminar=<?= $row['id']; ?>" class="btn-action delete" onclick="return confirm('¿Eliminar esta solicitud?')">🗑️</a>
+                            <a href="solicitudes.php?editar=<?php echo $row['id']; ?>" class="btn-action edit">✏️</a>
+                            <a href="solicitudes.php?eliminar=<?php echo $row['id']; ?>" class="btn-action delete" onclick="return confirm('¿Eliminar esta solicitud?')">🗑️</a>
                         </td>
                     </tr>
-                <?php endforeach; ?>
+                <?php endwhile; ?>
             </tbody>
         </table>
     </div>
