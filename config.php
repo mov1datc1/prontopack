@@ -1,7 +1,7 @@
 <?php
 $host = 'localhost';
 $db = 'dbgqc4ocvylt3w'; // Nombre de tu base de datos
-$user = 'sqbdendqukqd3'; // Usuario MySQL que creaste en SiteGround
+$user = 'urfzdrmdwrokn'; // Usuario MySQL que creaste en SiteGround
 $pass = '5#wjio#1#2t2'; // 🔒 Sustituye esto por tu contraseña real
 
 try {

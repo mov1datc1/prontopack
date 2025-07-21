@@ -1,13 +1,11 @@
-
 <?php
-$host = 'localhost';
-$dbname = 'wms';
-$username = 'root';
-$password = '';
+require_once 'config.php';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Error de conexión: " . $e->getMessage());
+    $pdo = null; // continúa sin conexión
+    $db_error = "❌ Error de conexión a la base de datos.";
 }
 ?>
