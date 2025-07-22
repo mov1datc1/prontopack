@@ -14,7 +14,7 @@ require_once 'config.php';
     <h2>1. Estado de conexión a base de datos</h2>
     <?php
     try {
-        $conn->query("SELECT 1");
+        $pdo->query("SELECT 1");
         echo "<p style='color: green;'>✅ Conexión exitosa a la base de datos.</p>";
     } catch (Exception $e) {
         echo "<p style='color: red;'>❌ Error en conexión: " . $e->getMessage() . "</p>";
