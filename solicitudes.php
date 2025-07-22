@@ -1,86 +1,63 @@
 <?php
-include 'includes/conexion.php';
-include 'includes/sidebar.php';
+require_once 'config.php';
 
-// Agregar o editar solicitud
-if (isset($_POST['guardar'])) {
-    $nombre = mysqli_real_escape_string($conn, $_POST['nombre']);
-    $descripcion = mysqli_real_escape_string($conn, $_POST['descripcion']);
-    $estatus = mysqli_real_escape_string($conn, $_POST['estatus']);
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+// Agregar nueva solicitud
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $nombre = $_POST["nombre"] ?? '';
+    $descripcion = $_POST["descripcion"] ?? '';
+    $estatus = $_POST["estatus"] ?? 'pendiente';
 
-    if ($id > 0) {
-        $sql = "UPDATE solicitudes SET tipo='$nombre', descripcion='$descripcion', estado='$estatus' WHERE id=$id";
-    } else {
-        $sql = "INSERT INTO solicitudes (tipo, descripcion, estado) VALUES ('$nombre', '$descripcion', '$estatus')";
+    if (!empty($nombre) && !empty($descripcion)) {
+        $stmt = $conn->prepare("INSERT INTO solicitudes (tipo, descripcion, estado) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $nombre, $descripcion, $estatus);
+        $stmt->execute();
     }
-
-    mysqli_query($conn, $sql);
-    header("Location: solicitudes.php");
-    exit();
 }
 
-// Eliminar solicitud
-if (isset($_GET['eliminar'])) {
-    $id = (int)$_GET['eliminar'];
-    mysqli_query($conn, "DELETE FROM solicitudes WHERE id = $id");
-    header("Location: solicitudes.php");
-    exit();
-}
-
-// Obtener datos para edición
-$editando = false;
-$solicitud_edit = ['id' => '', 'tipo' => '', 'descripcion' => '', 'estado' => 'pendiente'];
-if (isset($_GET['editar'])) {
-    $editando = true;
-    $id = (int)$_GET['editar'];
-    $res = mysqli_query($conn, "SELECT * FROM solicitudes WHERE id = $id");
-    $solicitud_edit = mysqli_fetch_assoc($res);
-}
-
-// Obtener todas las solicitudes
-$solicitudes = mysqli_query($conn, "SELECT * FROM solicitudes ORDER BY id DESC");
+// Obtener solicitudes
+$solicitudes = $conn->query("SELECT * FROM solicitudes");
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Solicitudes</title>
     <link rel="stylesheet" href="assets/estilos.css?v=<?php echo time(); ?>">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
 </head>
 <body>
     <?php include 'includes/sidebar.php'; ?>
 
-    <div class="content">
-        <h1 class="titulo">Solicitudes</h1>
+    <main class="main-content">
+        <div class="top-bar">
+            <h1>Solicitudes</h1>
+            <button class="btn" onclick="document.getElementById('form-popup').style.display='block'">➕ Nueva Solicitud</button>
+        </div>
 
-        <!-- Formulario -->
-        <div class="form-container">
-            <h2><?php echo $editando ? 'Editar Solicitud' : 'Agregar Nueva Solicitud'; ?></h2>
-            <form method="POST" class="formulario">
-                <input type="hidden" name="id" value="<?php echo $solicitud_edit['id']; ?>">
+        <div id="form-popup" class="form-popup">
+            <form class="form-container" method="POST">
+                <h2>Agregar Nueva Solicitud</h2>
                 <div class="form-group">
                     <label for="nombre">Nombre del Solicitante</label>
-                    <input type="text" name="nombre" id="nombre" required value="<?php echo $solicitud_edit['tipo']; ?>">
+                    <input type="text" name="nombre" required>
                 </div>
                 <div class="form-group">
                     <label for="descripcion">Descripción</label>
-                    <textarea name="descripcion" id="descripcion" rows="3" required><?php echo $solicitud_edit['descripcion']; ?></textarea>
+                    <textarea name="descripcion" required></textarea>
                 </div>
                 <div class="form-group">
                     <label for="estatus">Estatus</label>
-                    <select name="estatus" id="estatus" required>
-                        <option value="pendiente" <?php if ($solicitud_edit['estado'] == 'pendiente') echo 'selected'; ?>>Pendiente</option>
-                        <option value="proceso" <?php if ($solicitud_edit['estado'] == 'proceso') echo 'selected'; ?>>En proceso</option>
-                        <option value="realizado" <?php if ($solicitud_edit['estado'] == 'realizado') echo 'selected'; ?>>Realizado</option>
+                    <select name="estatus">
+                        <option value="pendiente">Pendiente</option>
+                        <option value="proceso">En Proceso</option>
+                        <option value="realizado">Realizado</option>
                     </select>
                 </div>
-                <button type="submit" name="guardar" class="btn btn-primary"><?php echo $editando ? 'Actualizar' : 'Agregar'; ?></button>
+                <button class="btn" type="submit">Agregar</button>
+                <button class="btn-secondary" type="button" onclick="document.getElementById('form-popup').style.display='none'">Cancelar</button>
             </form>
         </div>
 
-        <!-- Tabla -->
         <div class="table-container">
             <h2>Solicitudes Registradas</h2>
             <table class="tabla">
@@ -94,25 +71,21 @@ $solicitudes = mysqli_query($conn, "SELECT * FROM solicitudes ORDER BY id DESC")
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($row = mysqli_fetch_assoc($solicitudes)): ?>
+                    <?php while ($row = $solicitudes->fetch_assoc()): ?>
                         <tr>
-                            <td><?php echo $row['id']; ?></td>
-                            <td><?php echo htmlspecialchars($row['tipo']); ?></td>
-                            <td><?php echo htmlspecialchars($row['descripcion']); ?></td>
+                            <td><?= $row["id"] ?></td>
+                            <td><?= htmlspecialchars($row["tipo"] ?? '') ?></td>
+                            <td><?= htmlspecialchars($row["descripcion"] ?? '') ?></td>
+                            <td><span class="badge <?= $row["estado"] ?>"><?= ucfirst($row["estado"]) ?></span></td>
                             <td>
-                                <span class="badge <?php echo $row['estado']; ?>">
-                                    <?php echo ucfirst($row['estado']); ?>
-                                </span>
-                            </td>
-                            <td>
-                                <a href="solicitudes.php?editar=<?php echo $row['id']; ?>" class="btn-action edit">✏️</a>
-                                <a href="solicitudes.php?eliminar=<?php echo $row['id']; ?>" class="btn-action delete" onclick="return confirm('¿Eliminar esta solicitud?')">🗑️</a>
+                                <a href="#" class="btn-action edit">✏️</a>
+                                <a href="#" class="btn-action delete">🗑️</a>
                             </td>
                         </tr>
                     <?php endwhile; ?>
                 </tbody>
             </table>
         </div>
-    </div>
+    </main>
 </body>
 </html>
