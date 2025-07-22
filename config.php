@@ -1,5 +1,5 @@
 <?php
-$host = 'localhost';
+$host = 127.0.0.1;
 $db = 'dbgqc4ocvylt3w'; // Nombre de tu base de datos
 $user = 'urfzdrmdwrokn'; // Usuario MySQL que creaste en SiteGround
 $pass = 'c1$2@5@f151b'; // 🔒 Sustituye esto por tu contraseña real
