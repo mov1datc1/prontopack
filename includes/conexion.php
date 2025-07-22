@@ -1,11 +1,11 @@
 <?php
-require_once 'config.php';
+$host = '127.0.0.1';
+$db = 'dbqgc4ocvlyt3w'; // Nombre de tu base de datos
+$user = 'urfzdrmdwrokn'; // Usuario MySQL que creaste en SiteGround
+$pass = 'c1$2@5@f151b'; // 🔒 Sustituye esto por tu contraseña real
+$conn = mysqli_connect($host, $user, $pass, $db);
 
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    $pdo = null; // continúa sin conexión
-    $db_error = "❌ Error de conexión a la base de datos.";
+if (!$conn) {
+    die("❌ Error de conexión a la base de datos: " . mysqli_connect_error());
 }
 ?>

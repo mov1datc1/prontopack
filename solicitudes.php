@@ -2,6 +2,10 @@
 include 'includes/conexion.php';
 include 'includes/sidebar.php';
 
+if (!$conn) {
+    die("<p style='color: red;'>❌ No se pudo conectar a la base de datos.</p>");
+}
+
 // Agregar o editar solicitud
 if (isset($_POST['guardar'])) {
     $nombre = mysqli_real_escape_string($conn, $_POST['nombre']);
@@ -10,10 +14,8 @@ if (isset($_POST['guardar'])) {
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
     if ($id > 0) {
-        // Actualizar solicitud
         $sql = "UPDATE solicitudes SET nombre='$nombre', descripcion='$descripcion', estatus='$estatus' WHERE id=$id";
     } else {
-        // Insertar nueva solicitud
         $sql = "INSERT INTO solicitudes (nombre, descripcion, estatus) VALUES ('$nombre', '$descripcion', '$estatus')";
     }
 
